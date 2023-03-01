@@ -1,0 +1,65 @@
+version: '3'
+services:
+  broker-http:
+    container_name: broker-http
+    image: broker-http:dev
+    build:
+      context: ./
+      dockerfile: ./Broker.Face.Http/Dockerfile
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      Brokers__http-post-1__Options__RequestUri: http://consumers:9900/http-consumer
+      Brokers__http-patch-1__Options__RequestUri: http://consumers:9900/http-consumer
+      Brokers__grpc-1__Options__Address: http://consumers:9901
+      Brokers__kafka-1__Options__KafkaConfig__bootstrap.servers: kafka:9092
+
+  broker-grpc:
+    container_name: broker-grpc
+    image: broker-grpc:dev
+    build:
+      context: ./
+      dockerfile: ./Broker.Face.Grpc/Dockerfile
+    ports:
+      - "9100:9100"
+      - "9101:9101"
+    environment:
+      Brokers__http-post-1__Options__RequestUri: http://consumers:9900/http-consumer
+      Brokers__http-patch-1__Options__RequestUri: http://consumers:9900/http-consumer
+      Brokers__grpc-1__Options__Address: http://consumers:9901
+      Brokers__kafka-1__Options__KafkaConfig__bootstrap.servers: kafka:9092
+
+  consumers:
+    container_name: consumers
+    image: consumers:dev
+    depends_on:
+      - kafka
+    build:
+      context: ./
+      dockerfile: ./Broker.Face.Consumers/Dockerfile
+    environment:
+      Kafka__BootstrapServers: kafka:9092
+
+  kafka:
+    container_name: kafka
+    image: confluentinc/cp-kafka:7.3.0
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+  zookeeper:
+    container_name: zookeeper
+    image: confluentinc/cp-zookeeper:7.3.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000

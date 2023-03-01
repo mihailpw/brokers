@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option csharp_namespace = "Broker.Brokers.Grpc";
+
+package broker.brokers.grpc;
+
+service BrokerEvent {
+  rpc Send (BrokerEventRequest) returns (BrokerEventReply);
+}
+
+message BrokerEventRequest {
+  bytes data = 1;
+}
+
+message BrokerEventReply {
+}
